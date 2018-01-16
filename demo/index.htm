@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>js-tween</title>
+  <meta content="yes" name="apple-mobile-web-app-capable" />
+  <meta content="yes" name="apple-touch-fullscreen" />
+  <meta content="telephone=no,email=no" name="format-detection" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+  <link href="https://as.alipayobjects.com/g/h5-lib/antui/9.9.0-2/rem/antui.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #ddd;
+      color: green;
+    }
+
+    #slider {
+      position: absolute;
+      top: 10px;
+      left: 100px;
+      width: 420px;
+      height: 40px;
+      background-color: aquamarine;
+      display: block;
+    }
+
+    #slider-track {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 100%;
+      background-color: indianred;
+      display: block;
+    }
+
+    #slider-track2 {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 100%;
+      background-color: blue;
+      display: block;
+    }
+
+    #buttons {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 420px;
+      height: 40px;
+      display: block;
+    }
+
+    [role="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="button"],
+    button {
+      -webkit-box-sizing: content-box;
+      -moz-box-sizing: content-box;
+      box-sizing: content-box;
+    }
+
+    /* Reset `button` and button-style `input` default styles */
+
+    input[type="submit"],
+    input[type="reset"],
+    input[type="button"],
+    button {
+      background: none;
+      border: 0;
+      color: inherit;
+      /* cursor: default; */
+      font: inherit;
+      line-height: normal;
+      overflow: visible;
+      padding: 0;
+      -webkit-appearance: button;
+      /* for input */
+      -webkit-user-select: none;
+      /* for button */
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    input::-moz-focus-inner,
+    button::-moz-focus-inner {
+      border: 0;
+      padding: 0;
+    }
+
+    /* Make `a` like a button */
+
+    [role="button"] {
+      color: inherit;
+      cursor: default;
+      display: inline-block;
+      text-align: center;
+      text-decoration: none;
+      white-space: pre;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+
+    /* Demo */
+
+    [role="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="button"],
+    button {
+      background-color: #f0f0f0;
+      border: 1px solid rgb(0, 0, 0);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 0.25em;
+      height: 2.5em;
+      line-height: 2.5;
+      margin: 0.25em;
+      padding: 0 1em;
+      width: 14em;
+      -webkit-tap-highlight-color: aquamarine;
+    }
+
+    button:active {
+      background-color: aquamarine;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="slider">
+    <div id="slider-track"></div>
+    <div id="slider-track2"></div>
+  </div>
+
+  <div id='buttons'>
+    <button class="timescale" value="2">慢一倍x2</button>
+    <button class="timescale" value="1">正常</button>
+    <button class="timescale" value="0.5">快一倍x2</button>
+  </div>
+  <script src="./bezier-easing.js"></script>
+  <script src="../dist/js-tween.debug.js"></script>
+  <script>
+    var sprite = document.getElementById('slider-track');
+    var sprite2 = document.getElementById('slider-track2');
+    sprite.style.transformOrigin = "0 0";
+    sprite2.style.transformOrigin = "0 0";
+    var transform = { x: 0, y: 0, scale: 1, opacity: 1 };
+    var transform2 = { x: 0, y: 0, scale: 1, opacity: 1 };
+    function updateTransform() {
+      sprite.style.opacity = transform.opacity;
+      sprite.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+      sprite2.style.opacity = transform2.opacity;
+      sprite2.style.transform = `translate(${transform2.x}px, ${transform2.y}px) scale(${transform2.scale})`;
+      console.warn(`translate(${transform.x},${transform.y},${transform.scale})`);
+    }
+    // var tween = Tween.to(transform, {
+    //   x: 400, y: 00, z: 100
+    // }, {
+    //     ease: Tween.easings.easeOutBounce,
+    //     // ease: function (x) {
+    //     //   return Math.random();
+    //     // },
+    //     delay: 1000,
+    //     duration: 2000,
+    //     repeat: 3,
+    //     repeatDelay: 500,
+    //     yoyo: true,
+    //     update: function () {
+    //       updateTransform();
+    //     },
+    //     loop: function (repeat) {
+    //       console.log('loop:', repeat);
+    //     },
+    //     complete: function () {
+    //       console.log('onComplete:', transform);
+    //     }
+    //   });
+    // // tween.play();
+    // window.tween = tween;
+
+    var timeline = new Tween.Timeline({
+      // ease: Tween.easings.easeOutBounce,
+      // ease: bezierEasing(0.175, 0.885, 0.320, 1.275),
+      delay: 1000,
+      duration: 2000,
+      repeat: 2,
+      repeatDelay: 500,
+      yoyo: true,
+      update: function () {
+        updateTransform();
+      },
+      loop: function (repeat) {
+        console.log('loop:', repeat);
+      },
+      complete: function () {
+        console.log('onComplete:', transform);
+      }
+    });
+    timeline.to(transform, {
+      x: 200, y: 0, z: 100
+    }, 1000);
+
+    timeline.to(transform, {
+      x: 400, y: 0, z: 100, scale: 2
+    }, 1000);
+
+    timeline.to(transform, {
+      scale: 3
+    }, 1000, "+=100");
+
+
+    timeline.from(transform2, {
+      x: 400, y: 0, z: 100, opacity: 0.5
+    }, 1000, 0);
+    // timeline.init();
+    // timeline.fromTo(transform, {
+    //   x: 200, y: 0, z: 100
+    // }, {
+    //     x: 400, y: 0, z: 100
+    //   }, 2000);
+
+    function update() {
+      Tween.update();
+      requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+
+    document.getElementById('slider').addEventListener('click', function () {
+      timeline.toggle();
+    })
+
+    document.querySelectorAll('.timescale').forEach(function (e) {
+      e.addEventListener('click', function () {
+        timeline.timeScale(+this.value);
+      });
+    });
+  </script>
+</body>
+
+</html>
