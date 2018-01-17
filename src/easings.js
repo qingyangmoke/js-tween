@@ -53,5 +53,5 @@ for (const name in baseEasings) {
       : 1 - easeIn(p * -2 + 2) / 2;
   };
 }
-
+easings.default = easings.swing;
 export default easings;

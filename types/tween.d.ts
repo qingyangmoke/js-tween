@@ -50,7 +50,6 @@ declare interface TweenOptions {
   repeat?: number = 0;
   delay?: number = 0;
   ease?: (n) => number = easings.swing;
-  ignoreCheckKey?: boolean = false;
   autoKill?: boolean = true;
   repeatDelay?: number = 0;
   yoyo?: boolean = false;

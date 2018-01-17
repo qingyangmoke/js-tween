@@ -9,9 +9,9 @@ class TimelineEngine {
     this.options = options;
     this.keys = [];
   }
-  get ignoreCheckKey() {
-    return this.options.ignoreCheckKey;
-  }
+  // get ignoreCheckKey() {
+  //   return this.options.ignoreCheckKey;
+  // }
   get duration() {
     return this.options.duration;
   }
@@ -19,6 +19,7 @@ class TimelineEngine {
     this.options.duration = value;
   }
   reset() {
+    // 反向重置
     const tweens = this.tweens;
     for (let i = tweens.length - 1; i >= 0; i--) {
       const e = tweens[i];
@@ -26,7 +27,7 @@ class TimelineEngine {
       e.running = false;
     }
   }
-  seek(duration, reverse, force) {
+  seek(duration, reverse, force, target) {
     reverse = reverse || false;
     force = force || false;
     let changed = false;
@@ -34,6 +35,7 @@ class TimelineEngine {
       duration = this.duration - duration;
     }
     this.tweens.forEach((e) => {
+      if (target && e.target !== target) return;
       const running = e.start <= duration && e.end >= duration;
       if (running) {
         console.log('running', e);
@@ -90,63 +92,14 @@ class TimelineEngine {
     return engine;
   }
 
-  _updateKeys(engine) {
-    if (this.ignoreCheckKey) return;
-    let item = null;
-    const target = engine.target;
-    this.keys.forEach((e) => {
-      if (e.target === target) {
-        item = e;
-      }
-    });
-    if (!item) {
-      item = {
-        target,
-        keys: [],
-      };
-      this.keys.push(item);
-    }
-    engine._keys.forEach((key) => {
-      if (item.keys.indexOf(key) === -1) {
-        item.keys.push(key);
-      }
-    });
-  }
-
-  _keys(target) {
-    let keys = null;
-    this.keys.forEach((e) => {
-      if (e.target === target) {
-        keys = e.keys;
-      }
-    });
-    return keys;
-  }
-
   init() {
-    if (this.ignoreCheckKey) return;
-    // 这里为了把key进行重新计算
-    this.tweens.forEach((e) => {
-      const keys = this._keys(e.target);
-      console.log(e.target, keys);
-      keys && keys.forEach((key) => {
-        if (e._keys.indexOf(key) === -1) {
-          this.seek(e.start, false, true);
-          e._from[key] = e.target[key];
-          this.seek(e.end, false, true);
-          e._to[key] = e.target[key];
-          e._keys.push(key);
-        }
-      });
-    });
+    // this.seek(0, false, true);
   }
 
   to(target, vars, duration, position) {
     const engine = this._add(target, duration, position);
-    this.seek(engine.start, false, true);
+    this.seek(engine.start, false, true, target);
     engine.to(vars);
-    engine.running = false;
-    this._updateKeys(engine);
     this.tweens.push(engine);
     this.reset();
     console.log(target);
@@ -154,10 +107,9 @@ class TimelineEngine {
 
   from(target, vars, duration, position) {
     const engine = this._add(target, duration, position);
-    this.seek(engine.start, false, true);
+    this.seek(engine.start, false, true, target);
     engine.from(vars);
     console.log(engine);
-    this._updateKeys(engine);
     this.tweens.push(engine);
     this.reset();
   }
@@ -165,8 +117,11 @@ class TimelineEngine {
   fromTo(target, fromVars, toVars, duration, position) {
     const engine = this._add(target, duration, position);
     engine.fromTo(fromVars, toVars);
-    this._updateKeys(engine);
     this.tweens.push(engine);
+  }
+  wait(time) {
+    this.seekPointer += time;
+    this.duration = Math.max(this.seekPointer, this.duration);
   }
 }
 class Timeline extends Tween {
@@ -193,24 +148,33 @@ class Timeline extends Tween {
   play(reset) {
     this.init();
     super.play(reset);
+    return this;
   }
 
   to(target, vars, duration, position) {
     this._engine.to(target, vars, duration, position);
     this.seek(0);
     this._inited = false;
+    return this;
   }
 
   from(target, vars, duration, position) {
     this._engine.from(target, vars, duration, position);
     this.seek(0);
     this._inited = false;
+    return this;
   }
 
   fromTo(target, fromVars, toVars, duration, position) {
     this._engine.fromTo(target, fromVars, toVars, duration, position);
     this.seek(0);
     this._inited = false;
+    return this;
+  }
+
+  wait(duration) {
+    this._engine.wait(duration);
+    return this;
   }
 }
 

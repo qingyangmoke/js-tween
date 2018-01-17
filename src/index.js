@@ -59,18 +59,21 @@ function getTween(target, options) {
 Tween.to = function (target, vars, options) {
   const tween = getTween(target, options);
   tween._engine.to(vars);
+  tween.play();
   return tween;
 };
 
 Tween.from = function (target, vars, options) {
   const tween = getTween(target, options);
   tween._engine.from(vars);
+  tween.play();
   return tween;
 };
 
 Tween.fromTo = function (target, fromVars, toVars, options) {
   const tween = getTween(target, options);
   tween._engine.fromTo(fromVars, toVars);
+  tween.play();
   return tween;
 };
 

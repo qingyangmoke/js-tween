@@ -17,7 +17,7 @@ export const defaultOptions = {
    * 动画缓动函数 Tween.easings
    */
   ease: easings.swing,
-  ignoreCheckKey: false,
+  // ignoreCheckKey: false,
   autoKill: true,
   repeatDelay: 0,
   yoyo: false,

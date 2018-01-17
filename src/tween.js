@@ -25,7 +25,9 @@ class Tween {
     this._startTime = 0;
     this._killed = false;
     this._lastTime = 0;
+    this._repeat = 0;
     this._playback = false;
+    this._complete = false;
     // 快进的倍数 立马生效
     this._timeScale = 1;
   }
@@ -37,6 +39,7 @@ class Tween {
   timeScale(value) {
     if (value <= 0) return;
     this._timeScale = value;
+    return this;
   }
 
   _invoke(name, args) {
@@ -60,6 +63,8 @@ class Tween {
     self._killed = false;
     self._playback = false;
     self._seekSegment = -1;
+    self._complete = false;
+    self._repeat = 0;
     // self._timeScale = 1;
   }
 
@@ -72,6 +77,7 @@ class Tween {
     self._killed = false;
     self._playback = true;
     self.resume();
+    return self;
   }
 
   /**
@@ -93,6 +99,7 @@ class Tween {
       self._state = STATE_PLAYING;
     }
     pool.add(self);
+    return self;
   }
 
   pause(force) {
@@ -103,11 +110,13 @@ class Tween {
     self._pausedTime = Date.now();
     self._state = STATE_PAUSED;
     pool.remove(self);
+    return self;
   }
 
   resume() {
     const self = this;
     self.play(self._state === STATE_IDLE);
+    return self;
   }
 
   stop(reset) {
@@ -118,6 +127,7 @@ class Tween {
       self.reset();
     }
     pool.remove(self);
+    return self;
   }
 
   toggle() {
@@ -129,6 +139,7 @@ class Tween {
     } else {
       self.play();
     }
+    return this;
   }
 
   seek(duration) {
@@ -136,6 +147,7 @@ class Tween {
     this._lastTime = now;
     this._seekSegment = -1;
     this._updateSeek(now, true);
+    return this;
   }
 
   kill() {
@@ -185,7 +197,7 @@ class Tween {
     if (self._seekSegment !== seekSegment) {
       console.log(self._elapsedMS, seekAll, seekSegment, duration, seekRepeat, isYoyo);
       if (self._engine.seek(seekSegment, isYoyo) || self._seekSegment === -1) {
-        self._invoke(EVENT_UPDATE);
+        self._invoke(EVENT_UPDATE, { seek: seekSegment, yoyo: isYoyo });
       }
       self._seekSegment = seekSegment;
     }
@@ -193,21 +205,26 @@ class Tween {
     if (!user) {
       if (self._playback) {
         if (seekAll <= 0) {
-          self.stop();
-          self._invoke(EVENT_COMPLETE);
+          self.stop(true);
+          self._invoke(EVENT_COMPLETE, { playback: true });
           if (autoKill) {
             self.kill();
           }
           console.log('_playback complete', seekAll);
-          self._playback = false;
         }
       } else {
         if (seekRepeat < repeat || repeat === -1) {
-          self._startTime = now + repeatDelay;
-          self._invoke(EVENT_LOOP, seekRepeat);
+          if (this._repeat !== seekRepeat) {
+            self._startTime = now + repeatDelay;
+            self._invoke(EVENT_LOOP, { repeat: seekRepeat });
+            this._repeat = seekRepeat;
+          }
         } else {
+          self._invoke(EVENT_LOOP, { repeat: seekRepeat });
+          this._repeat = seekRepeat;
           self.stop();
-          self._invoke(EVENT_COMPLETE);
+          self._invoke(EVENT_COMPLETE, { playback: false });
+          self._complete = true;
           if (autoKill) {
             self.kill();
           }
@@ -218,6 +235,7 @@ class Tween {
   }
   replay() {
     this.play(true);
+    return this;
   }
 }
 

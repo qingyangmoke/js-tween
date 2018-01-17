@@ -148,18 +148,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	Tween.to = function (target, vars, options) {
 	  var tween = getTween(target, options);
 	  tween._engine.to(vars);
+	  tween.play();
 	  return tween;
 	};
 
 	Tween.from = function (target, vars, options) {
 	  var tween = getTween(target, options);
 	  tween._engine.from(vars);
+	  tween.play();
 	  return tween;
 	};
 
 	Tween.fromTo = function (target, fromVars, toVars, options) {
 	  var tween = getTween(target, options);
 	  tween._engine.fromTo(fromVars, toVars);
+	  tween.play();
 	  return tween;
 	};
 
@@ -232,7 +235,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	for (var name in baseEasings) {
 	  _loop(name);
 	}
-
+	easings.default = easings.swing;
 	exports.default = easings;
 
 /***/ }),
@@ -278,7 +281,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._startTime = 0;
 	    this._killed = false;
 	    this._lastTime = 0;
+	    this._repeat = 0;
 	    this._playback = false;
+	    this._complete = false;
 	    // 快进的倍数 立马生效
 	    this._timeScale = 1;
 	  }
@@ -294,6 +299,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function timeScale(value) {
 	      if (value <= 0) return;
 	      this._timeScale = value;
+	      return this;
 	    }
 	  }, {
 	    key: '_invoke',
@@ -311,6 +317,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      self._killed = false;
 	      self._playback = false;
 	      self._seekSegment = -1;
+	      self._complete = false;
+	      self._repeat = 0;
 	      // self._timeScale = 1;
 	    }
 
@@ -326,6 +334,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      self._killed = false;
 	      self._playback = true;
 	      self.resume();
+	      return self;
 	    }
 
 	    /**
@@ -350,6 +359,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self._state = STATE_PLAYING;
 	      }
 	      _pool.pool.add(self);
+	      return self;
 	    }
 	  }, {
 	    key: 'pause',
@@ -361,12 +371,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      self._pausedTime = Date.now();
 	      self._state = STATE_PAUSED;
 	      _pool.pool.remove(self);
+	      return self;
 	    }
 	  }, {
 	    key: 'resume',
 	    value: function resume() {
 	      var self = this;
 	      self.play(self._state === STATE_IDLE);
+	      return self;
 	    }
 	  }, {
 	    key: 'stop',
@@ -378,6 +390,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        self.reset();
 	      }
 	      _pool.pool.remove(self);
+	      return self;
 	    }
 	  }, {
 	    key: 'toggle',
@@ -390,6 +403,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      } else {
 	        self.play();
 	      }
+	      return this;
 	    }
 	  }, {
 	    key: 'seek',
@@ -398,6 +412,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._lastTime = now;
 	      this._seekSegment = -1;
 	      this._updateSeek(now, true);
+	      return this;
 	    }
 	  }, {
 	    key: 'kill',
@@ -455,7 +470,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      if (self._seekSegment !== seekSegment) {
 	        if (self._engine.seek(seekSegment, isYoyo) || self._seekSegment === -1) {
-	          self._invoke(EVENT_UPDATE);
+	          self._invoke(EVENT_UPDATE, { seek: seekSegment, yoyo: isYoyo });
 	        }
 	        self._seekSegment = seekSegment;
 	      }
@@ -463,21 +478,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (!user) {
 	        if (self._playback) {
 	          if (seekAll <= 0) {
-	            self.stop();
-	            self._invoke(EVENT_COMPLETE);
+	            self.stop(true);
+	            self._invoke(EVENT_COMPLETE, { playback: true });
 	            if (autoKill) {
 	              self.kill();
 	            }
-
-	            self._playback = false;
 	          }
 	        } else {
 	          if (seekRepeat < repeat || repeat === -1) {
-	            self._startTime = now + repeatDelay;
-	            self._invoke(EVENT_LOOP, seekRepeat);
+	            if (this._repeat !== seekRepeat) {
+	              self._startTime = now + repeatDelay;
+	              self._invoke(EVENT_LOOP, { repeat: seekRepeat });
+	              this._repeat = seekRepeat;
+	            }
 	          } else {
+	            self._invoke(EVENT_LOOP, { repeat: seekRepeat });
+	            this._repeat = seekRepeat;
 	            self.stop();
-	            self._invoke(EVENT_COMPLETE);
+	            self._invoke(EVENT_COMPLETE, { playback: false });
+	            self._complete = true;
 	            if (autoKill) {
 	              self.kill();
 	            }
@@ -489,6 +508,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'replay',
 	    value: function replay() {
 	      this.play(true);
+	      return this;
 	    }
 	  }, {
 	    key: 'paused',
@@ -662,7 +682,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * 动画缓动函数 Tween.easings
 	   */
 	  ease: _easings2.default.swing,
-	  ignoreCheckKey: false,
+	  // ignoreCheckKey: false,
 	  autoKill: true,
 	  repeatDelay: 0,
 	  yoyo: false
@@ -821,10 +841,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.options = options;
 	    this.keys = [];
 	  }
+	  // get ignoreCheckKey() {
+	  //   return this.options.ignoreCheckKey;
+	  // }
+
 
 	  _createClass(TimelineEngine, [{
 	    key: 'reset',
 	    value: function reset() {
+	      // 反向重置
 	      var tweens = this.tweens;
 	      for (var i = tweens.length - 1; i >= 0; i--) {
 	        var e = tweens[i];
@@ -834,7 +859,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }, {
 	    key: 'seek',
-	    value: function seek(duration, reverse, force) {
+	    value: function seek(duration, reverse, force, target) {
 	      reverse = reverse || false;
 	      force = force || false;
 	      var changed = false;
@@ -842,6 +867,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        duration = this.duration - duration;
 	      }
 	      this.tweens.forEach(function (e) {
+	        if (target && e.target !== target) return;
 	        var running = e.start <= duration && e.end >= duration;
 	        if (running) {
 	          var seek = Math.min(e.duration, Math.max(0, duration - e.start));
@@ -901,69 +927,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return engine;
 	    }
 	  }, {
-	    key: '_updateKeys',
-	    value: function _updateKeys(engine) {
-	      if (this.ignoreCheckKey) return;
-	      var item = null;
-	      var target = engine.target;
-	      this.keys.forEach(function (e) {
-	        if (e.target === target) {
-	          item = e;
-	        }
-	      });
-	      if (!item) {
-	        item = {
-	          target: target,
-	          keys: []
-	        };
-	        this.keys.push(item);
-	      }
-	      engine._keys.forEach(function (key) {
-	        if (item.keys.indexOf(key) === -1) {
-	          item.keys.push(key);
-	        }
-	      });
-	    }
-	  }, {
-	    key: '_keys',
-	    value: function _keys(target) {
-	      var keys = null;
-	      this.keys.forEach(function (e) {
-	        if (e.target === target) {
-	          keys = e.keys;
-	        }
-	      });
-	      return keys;
-	    }
-	  }, {
 	    key: 'init',
 	    value: function init() {
-	      var _this = this;
-
-	      if (this.ignoreCheckKey) return;
-	      // 这里为了把key进行重新计算
-	      this.tweens.forEach(function (e) {
-	        var keys = _this._keys(e.target);
-
-	        keys && keys.forEach(function (key) {
-	          if (e._keys.indexOf(key) === -1) {
-	            _this.seek(e.start, false, true);
-	            e._from[key] = e.target[key];
-	            _this.seek(e.end, false, true);
-	            e._to[key] = e.target[key];
-	            e._keys.push(key);
-	          }
-	        });
-	      });
+	      // this.seek(0, false, true);
 	    }
 	  }, {
 	    key: 'to',
 	    value: function to(target, vars, duration, position) {
 	      var engine = this._add(target, duration, position);
-	      this.seek(engine.start, false, true);
+	      this.seek(engine.start, false, true, target);
 	      engine.to(vars);
-	      engine.running = false;
-	      this._updateKeys(engine);
 	      this.tweens.push(engine);
 	      this.reset();
 	    }
@@ -971,10 +944,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'from',
 	    value: function from(target, vars, duration, position) {
 	      var engine = this._add(target, duration, position);
-	      this.seek(engine.start, false, true);
+	      this.seek(engine.start, false, true, target);
 	      engine.from(vars);
 
-	      this._updateKeys(engine);
 	      this.tweens.push(engine);
 	      this.reset();
 	    }
@@ -983,13 +955,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function fromTo(target, fromVars, toVars, duration, position) {
 	      var engine = this._add(target, duration, position);
 	      engine.fromTo(fromVars, toVars);
-	      this._updateKeys(engine);
 	      this.tweens.push(engine);
 	    }
 	  }, {
-	    key: 'ignoreCheckKey',
-	    get: function get() {
-	      return this.options.ignoreCheckKey;
+	    key: 'wait',
+	    value: function wait(time) {
+	      this.seekPointer += time;
+	      this.duration = Math.max(this.seekPointer, this.duration);
 	    }
 	  }, {
 	    key: 'duration',
@@ -1014,11 +986,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      autoKill: false
 	    }, options);
 
-	    var _this2 = _possibleConstructorReturn(this, (Timeline.__proto__ || Object.getPrototypeOf(Timeline)).call(this, null, options));
+	    var _this = _possibleConstructorReturn(this, (Timeline.__proto__ || Object.getPrototypeOf(Timeline)).call(this, null, options));
 
-	    _this2._engine = new TimelineEngine(_this2.options);
-	    _this2._inited = false;
-	    return _this2;
+	    _this._engine = new TimelineEngine(_this.options);
+	    _this._inited = false;
+	    return _this;
 	  }
 
 	  _createClass(Timeline, [{
@@ -1040,6 +1012,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function play(reset) {
 	      this.init();
 	      _get(Timeline.prototype.__proto__ || Object.getPrototypeOf(Timeline.prototype), 'play', this).call(this, reset);
+	      return this;
 	    }
 	  }, {
 	    key: 'to',
@@ -1047,6 +1020,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._engine.to(target, vars, duration, position);
 	      this.seek(0);
 	      this._inited = false;
+	      return this;
 	    }
 	  }, {
 	    key: 'from',
@@ -1054,6 +1028,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._engine.from(target, vars, duration, position);
 	      this.seek(0);
 	      this._inited = false;
+	      return this;
 	    }
 	  }, {
 	    key: 'fromTo',
@@ -1061,6 +1036,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._engine.fromTo(target, fromVars, toVars, duration, position);
 	      this.seek(0);
 	      this._inited = false;
+	      return this;
+	    }
+	  }, {
+	    key: 'wait',
+	    value: function wait(duration) {
+	      this._engine.wait(duration);
+	      return this;
 	    }
 	  }]);
 

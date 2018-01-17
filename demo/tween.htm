@@ -137,100 +137,44 @@
 <body>
   <div id="slider">
     <div id="slider-track"></div>
-    <div id="slider-track2"></div>
   </div>
 
   <div id='buttons'>
-    <button class="timescale" value="2">慢一倍x2</button>
-    <button class="timescale" value="1">正常</button>
-    <button class="timescale" value="0.5">快一倍x2</button>
+    <button class="timescale" value="play">播放</button>
+    <button class="timescale" value="pause">暂停</button>
+    <button class="timescale" value="playback">回放</button>
   </div>
   <script src="./bezier-easing.js"></script>
   <script src="../dist/js-tween.debug.js"></script>
   <script>
     var sprite = document.getElementById('slider-track');
-    var sprite2 = document.getElementById('slider-track2');
     sprite.style.transformOrigin = "0 0";
-    sprite2.style.transformOrigin = "0 0";
-    var transform = { name: 'trans_1', x: 0, y: 0, scale: 1, opacity: 1 };
-    var transform2 = { name: 'trans_2', x: 0, y: 0, scale: 1, opacity: 1 };
+    var transform = { x: 0, y: 0, scale: 1, opacity: 1 };
     function updateTransform() {
       sprite.style.opacity = transform.opacity;
       sprite.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
-      sprite2.style.opacity = transform2.opacity;
-      sprite2.style.transform = `translate(${transform2.x}px, ${transform2.y}px) scale(${transform2.scale})`;
-      console.warn(`translate(${transform.x},${transform.y},${transform.scale})`);
     }
-    // var tween = Tween.to(transform, {
-    //   x: 400, y: 00, z: 100
-    // }, {
-    //     ease: Tween.easings.easeOutBounce,
-    //     // ease: function (x) {
-    //     //   return Math.random();
-    //     // },
-    //     delay: 1000,
-    //     duration: 2000,
-    //     repeat: 3,
-    //     repeatDelay: 500,
-    //     yoyo: true,
-    //     update: function () {
-    //       updateTransform();
-    //     },
-    //     loop: function (repeat) {
-    //       console.log('loop:', repeat);
-    //     },
-    //     complete: function () {
-    //       console.log('onComplete:', transform);
-    //     }
-    //   });
-    // // tween.play();
-    // window.tween = tween;
-
-    var timeline = new Tween.Timeline({
-      ease: Tween.easings.easeOutBack,
-      // ease: bezierEasing(0.175, 0.885, 0.320, 1.275),
-      delay: 1000,
-      repeat: 3,
-      repeatDelay: 500,
-      yoyo: true,
-      update: function () {
-        updateTransform();
-      },
-      loop: function (repeat) {
-        console.log('loop:', repeat);
-      },
-      complete: function () {
-        console.log('onComplete:', transform);
-      }
-    })
-      .to(transform, {
-        x: 200, y: 0, z: 100
-      }, 1000)
-      .wait(1000)
-      .to(transform, {
-        x: 400, y: 0, z: 100, scale: 2
-      }, 1000)
-      .to(transform, {
-        scale: 3
-      }, {
-        duration: 1000,
-        ease: Tween.easings.default
-      }, "+=100")
-      .from(transform2, {
-        x: 400, y: 0, z: 100, opacity: 0.5
-      }, 2000, 0)
-      .to(transform2, { scale: 3 }, {
-        duration: 1000,
-        ease: Tween.easings.default
-      })
-      .wait(200)
-      .to(transform2, { y: 50, scale: 1 }, 2000)
-      .play();
-    // timeline.fromTo(transform, {
-    //   x: 200, y: 0, z: 100
-    // }, {
-    //     x: 400, y: 0, z: 100
-    //   }, 2000);
+    var tween = Tween.fromTo(transform, { x: 200 }, {
+      x: 400, y: 00, z: 100
+    }, {
+        ease: Tween.easings.easeOutBounce,
+        delay: 1000,
+        duration: 2000,
+        repeat: 3,
+        repeatDelay: 500,
+        yoyo: true,
+        autoKill: false,
+        update: function (e) {
+          updateTransform();
+          console.log('[event] -> update:', e);
+        },
+        loop: function (e) {
+          console.log('[event] -> loop:', e);
+        },
+        complete: function (e) {
+          console.log('[event] -> complete:', e);
+        }
+      });
 
     function update() {
       Tween.update();
@@ -238,17 +182,9 @@
     }
     requestAnimationFrame(update);
 
-    document.getElementById('slider').addEventListener('click', function () {
-      if (timeline._complete) {
-        timeline.playback();
-      } else {
-        timeline.toggle();
-      }
-    })
-
     document.querySelectorAll('.timescale').forEach(function (e) {
       e.addEventListener('click', function () {
-        timeline.timeScale(+this.value);
+        tween[this.value]();
       });
     });
   </script>
