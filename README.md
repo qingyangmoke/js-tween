@@ -1,5 +1,5 @@
-# js-weapon
-> 前端开发过程中经常使用的代码集合，日常积累，日常项目使用
+# js-tween
+> js 缓动库 支持timeline
 
 ## 安装
 ```
@@ -8,7 +8,7 @@
 
 ## 使用
 ``` js
-var JSWeapon = require('js-tween');
+var Tween = require('js-tween');
 ```
 OR
 ``` js
